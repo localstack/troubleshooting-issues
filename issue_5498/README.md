@@ -1,12 +1,10 @@
 # Issue 
 
- https://github.com/localstack/localstack/issues/5498
+https://github.com/localstack/localstack/issues/5498
 
 ## Install
 
-```
-npm install -d
-```
+`npm install -d`
 
 ## Run
 
