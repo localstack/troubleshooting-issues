@@ -1,0 +1,217 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+
+  Environment:
+    Type: String
+    Description: Environment (sandbox, dev, qa, prod).
+    Default: sandbox
+  AppName:
+    Type: String
+    Description: Select the ECS Application Name.
+    Default: timeseries-ingest
+
+Resources:
+
+  KinesisAPIGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Description: 'API Gateway to Kinesis'
+      Name: 'KinesisApiGateway'
+
+  KinesisAPIGatewayIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: ''
+            Effect: 'Allow'
+            Principal:
+              Service:
+                - 'apigateway.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonKinesisFullAccess
+
+  KinesisAPIGatewayDeployment:
+    DependsOn: KinesisIngestAPIMethod
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref KinesisAPIGateway
+
+  KinesisAPIGatewayStage:
+    Type: 'AWS::ApiGateway::Stage'
+    Properties:
+      DeploymentId: !Ref KinesisAPIGatewayDeployment
+      MethodSettings:
+        - CachingEnabled: 'false'
+          DataTraceEnabled: 'true'
+          HttpMethod: '*'
+          LoggingLevel: 'INFO'
+          MetricsEnabled: 'true'
+          ResourcePath: '/*'
+          ThrottlingBurstLimit: 5000
+          ThrottlingRateLimit: 10000
+      RestApiId: !Ref KinesisAPIGateway
+      StageName: !Sub ${Environment}
+
+  KinesisIngestAPIResource1:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref KinesisAPIGateway
+      ParentId:  !GetAtt KinesisAPIGateway.RootResourceId
+      PathPart: sites
+
+  KinesisIngestAPIResource2:
+    DependsOn:
+    - KinesisIngestAPIResource1
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref KinesisAPIGateway
+      ParentId: !Ref KinesisIngestAPIResource1
+      PathPart: '{siteId}'
+
+  KinesisIngestAPIResource3:
+    DependsOn:
+    - KinesisIngestAPIResource2
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref KinesisAPIGateway
+      ParentId: !Ref KinesisIngestAPIResource2
+      PathPart: ingest
+
+  KinesisIngestAPIRequestBodyModel:
+    Type: 'AWS::ApiGateway::Model'
+    Properties:
+      ContentType: 'application/json'
+      Description: 'Ingest packet format'
+      RestApiId: !Ref KinesisAPIGateway
+      Schema: '{"$schema":"http://json-schema.org/draft-04/schema#","title":"Todos","type":"object","properties":{"HID":{"type":"string"},"SID":{"type":"string"},"Data":{"type":"object"}},"required":["HID","SID","Data"]}'
+
+  KinesisIngestAPIRequestValidator:
+    Type: AWS::ApiGateway::RequestValidator
+    Properties:
+      RestApiId: !Ref KinesisAPIGateway
+      ValidateRequestBody: true
+      ValidateRequestParameters: false
+
+  KinesisIngestAPIMethod:
+    DependsOn:
+    - KinesisIngestAPIResource3
+    - KinesisIngestAPIResource2
+    - KinesisIngestAPIResource1
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: 'NONE'
+      AuthorizerId: !Ref KinesisAPIAuthorizer
+      ApiKeyRequired: false
+      HttpMethod: 'POST'
+      Integration:
+        ConnectionType: INTERNET # TODO revisit
+        Credentials: !GetAtt KinesisAPIGatewayIamRole.Arn
+        IntegrationHttpMethod: POST
+        PassthroughBehavior: NEVER
+        # Set the Content-Type header to an AWS-compliant version of JSON. See https://docs.aws.amazon.com/apigateway/latest/developerguide/integrating-api-with-aws-services-kinesis.html.
+        RequestParameters:
+          integration.request.header.Content-Type: "'application/x-amz-json-1.1'"
+        RequestTemplates:
+          application/json: !Sub "{\"Data\": \"$util.base64Encode($input.body)\", \"PartitionKey\": \"$util.escapeJavaScript($input.params('siteId'))\", \"StreamName\": \"${Environment}-timeseries-ingest-stream\"}"
+        IntegrationResponses:
+        - StatusCode: 200
+        - StatusCode: 500
+        TimeoutInMillis: 29000
+        Type: AWS
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:kinesis:action/PutRecord'
+      MethodResponses:
+      - StatusCode: 200
+      - StatusCode: 500
+      RequestModels:
+        application/json: !Ref KinesisIngestAPIRequestBodyModel
+      RestApiId: !Ref KinesisAPIGateway
+      RequestValidatorId: !Ref KinesisIngestAPIRequestValidator
+      ResourceId: !Ref KinesisIngestAPIResource3
+
+  KinesisAPIAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      AuthorizerResultTtlInSeconds: 300
+      AuthorizerUri: !Join
+        - ''
+        - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
+          - !GetAtt
+            - KinesisAPILambdaAuthorizer
+            - Arn
+          - /invocations
+      IdentitySource: 'method.request.header.Authorization'
+      Name: 'kinesis-api-authorizer'
+      RestApiId: !Ref KinesisAPIGateway
+      Type: 'TOKEN'
+
+  KinesisAPIInvokeLambdaAuthorizerPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+    - KinesisAPIGateway
+    - KinesisAPILambdaAuthorizer
+    Properties:
+      Action: "lambda:InvokeFunction"
+      FunctionName: !GetAtt KinesisAPILambdaAuthorizer.Arn
+      Principal: "apigateway.amazonaws.com"
+
+  KinesisAPILambdaAuthorizerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - lambda.amazonaws.com
+          Action:
+            - sts:AssumeRole
+      Path: "/"
+      RoleName: !Sub ${Environment}-${AppName}-KinesisAPILambdaAuthorizerRole
+      Policies:
+      - PolicyName: !Sub ${Environment}-${AppName}-KinesisAPILambdaAuthorizerRole
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+            Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+          - Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/KinesisAPILambdaAuthorizer:*'
+      # This policy is needed to enable the Lambda Authorizer code to call the OIDC server which is
+      # hosted on the VPC. Without this policy, the authorizer's call to the OIDC server times out.
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+
+  KinesisAPILambdaAuthorizer:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        # TODO - environment s3 specific deployment file paths or buckets
+        S3Bucket: 'timeseries-ingest-lambda-artifacts'
+        S3Key: 'KinesisAPILambdaAuthorizer/lambda.zip'
+      Description: 'Lambda authorizer for API Gateway in front of Kinesis.'
+      Handler: 'APIGatewayKinesisLambdaAuthorizer::APIGatewayKinesisLambdaAuthorizer.Functions::Get'
+      PackageType: 'Zip'
+      Role: !GetAtt KinesisAPILambdaAuthorizerRole.Arn
+      Runtime: 'dotnetcore3.1'
+      Timeout: 60
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-c78005a8 # TODO: not hardcode?
+        SubnetIds:
+          - subnet-0d417d79 # TODO: not hardcode?
+
+Outputs:
+  kinesisapigateway:
+    Value: !Ref KinesisAPIGateway
