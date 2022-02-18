@@ -105,7 +105,7 @@ Resources:
     - KinesisIngestAPIResource1
     Type: 'AWS::ApiGateway::Method'
     Properties:
-      AuthorizationType: 'NONE'
+      AuthorizationType: 'CUSTOM'
       AuthorizerId: !Ref KinesisAPIAuthorizer
       ApiKeyRequired: false
       HttpMethod: 'POST'
@@ -201,10 +201,10 @@ Resources:
         S3Bucket: 'timeseries-ingest-lambda-artifacts'
         S3Key: 'KinesisAPILambdaAuthorizer/lambda.zip'
       Description: 'Lambda authorizer for API Gateway in front of Kinesis.'
-      Handler: 'APIGatewayKinesisLambdaAuthorizer::APIGatewayKinesisLambdaAuthorizer.Functions::Get'
+      Handler: 'lambda.lambda_handler'
       PackageType: 'Zip'
       Role: !GetAtt KinesisAPILambdaAuthorizerRole.Arn
-      Runtime: 'dotnetcore3.1'
+      Runtime: 'python3.8'
       Timeout: 60
       VpcConfig:
         SecurityGroupIds:
