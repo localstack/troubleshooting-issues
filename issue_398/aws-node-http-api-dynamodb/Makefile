@@ -26,7 +26,7 @@ run:         ## Deploy the app locally and run an API GW test invocation
 		echo "Generating and importing test SSL certificate to ACM for Route53 domain api.example.com"; \
 		make cert; \
 		echo "Importing local test certificate into ACM API ..."; \
-		awslocal acm import-certificate --certificate file://sslcert/server.crt --private-key file://sslcert/ssl.key && \
+		awslocal acm import-certificate --certificate fileb://sslcert/server.crt --private-key fileb://sslcert/ssl.key && \
 		echo "Creating Route53 hosted zone for test domain 'api.example.com' ..."; \
 		awslocal route53 create-hosted-zone --name api.example.com --caller-reference r1 && \
 		echo "Deploying Serverless app to local environment"; \

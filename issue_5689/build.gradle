@@ -1,0 +1,33 @@
+plugins {
+    id 'java'
+}
+
+group 'zlack.bra.instamini'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.amazonaws:aws-lambda-java-core:1.2.1'
+    implementation 'com.amazonaws:aws-lambda-java-events:3.11.0'
+    implementation platform('com.amazonaws:aws-java-sdk-bom:1.11.1000')
+    implementation 'com.amazonaws:aws-java-sdk-lambda:1.12.172'
+    testImplementation 'junit:junit:4.13.2'
+}
+
+sourceCompatibility = 8
+targetCompatibility = 8
+task buildZip(type: Zip) {
+    from compileJava
+    from processResources
+    into('lib') {
+        from configurations.runtimeClasspath
+    }
+}
+
+
+test {
+    useJUnitPlatform()
+}
