@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+./gradlew buildZip
+
 awslocal lambda create-function --function-name Test --runtime java11 --handler SavePostHandler::handleRequest --zip-file fileb://build/distributions/issue_5689-1.0-SNAPSHOT.zip --role arn:aws:iam::000000000:role/dummy --timeout 60
 
 REST_API_ID=$(awslocal apigateway create-rest-api --region eu-central-1 --name "test" | jq '.id' | tr -d '"')

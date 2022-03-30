@@ -1,0 +1,3 @@
+# Build
+
+	./gradlew buildZip
