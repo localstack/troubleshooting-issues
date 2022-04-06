@@ -9,3 +9,4 @@ Issues | Description
 [5406](https://github.com/localstack/localstack/issues/5406) | API Gateway with a Lambda Authorizer via a CloudFormation stack
 [398](https://github.com/localstack/localstack-ext/issues/398) | API Gateway custom domain via serverless framework
 [5689](https://github.com/localstack/troubleshooting-issues/tree/main/issue_5689) | API Gateway with Lambda integration returns 404
+[5808](https://github.com/localstack/troubleshooting-issues/tree/main/issue_5808) | API Gateway with state machine integration
