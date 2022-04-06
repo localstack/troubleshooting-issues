@@ -1,0 +1,15 @@
+version: '3.7'
+
+services:
+  localstack:
+    image: localstack/localstack
+    environment:
+      - SERVICES=${SERVICES- }
+      - DATA_DIR=/tmp/localstack/data
+      - LAMBDA_EXECUTOR=docker
+      - DEBUG=1
+    ports:
+      - '4566:4566'
+    volumes:
+      - /tmp/localstack:/tmp/localstack
+      - /var/run/docker.sock:/var/run/docker.sock

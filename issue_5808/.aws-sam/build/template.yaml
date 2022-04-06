@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'localstack-bug-node14
+
+  '
+Resources:
+  TestApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: local
+  TestStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: TestStateMachine-LOCAL
+      DefinitionUri: ../../statemachine/hello_world.asl.json
+      DefinitionSubstitutions:
+        TestFunction:
+          Fn::GetAtt:
+          - TestFunction
+          - Arn
+      Events:
+        TestApiEvent:
+          Type: Api
+          Properties:
+            Method: POST
+            Path: /
+            RestApiId:
+              Ref: TestApi
+      Policies:
+      - LambdaInvokePolicy:
+          FunctionName:
+            Ref: TestFunction
+  TestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: TestFunction-LOCAL
+      CodeUri: TestFunction
+      Handler: app.handler
+      Runtime: nodejs14.x
+      Architectures:
+      - x86_64
+    Metadata:
+      SamResourceId: TestFunction
+Outputs:
+  TestApi:
+    Description: API Gateway endpoint URL
+    Value:
+      Fn::Sub: http://localhost:4566/restapis/${TestApi}/local/_user_request_/
