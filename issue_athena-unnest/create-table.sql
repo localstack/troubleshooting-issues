@@ -20,12 +20,12 @@ CREATE EXTERNAL TABLE revenue.invoices(
   `customfields` array<struct<fieldname:STRING,fieldvalue:STRING>> ,
   `sourcemodifieddate` DATE ,
   `modifieddate` DATE )
---PARTITIONED BY (
---  `source` STRING,
---  `company_id` INT,
---  `api_key_id` STRING,
---  `account` STRING
---)
+PARTITIONED BY (
+  `source` STRING,
+  `company_id` INT,
+  `api_key_id` STRING,
+  `account` STRING
+)
 ROW FORMAT SERDE
   'org.apache.hive.hcatalog.data.JsonSerDe'
 WITH SERDEPROPERTIES (
