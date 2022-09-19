@@ -10,3 +10,4 @@ Issues | Description
 [398](https://github.com/localstack/localstack-ext/issues/398) | API Gateway custom domain via serverless framework
 [5689](https://github.com/localstack/troubleshooting-issues/tree/main/issue_5689) | API Gateway with Lambda integration returns 404
 [5808](https://github.com/localstack/troubleshooting-issues/tree/main/issue_5808) | API Gateway with step-function integration
+[6707](https://github.com/localstack/troubleshooting-issues/tree/main/issue_6707) | API Gateway Lambda Authorization header

@@ -3,7 +3,7 @@ version = 0.1
 [default.deploy]
 [default.deploy.parameters]
 stack_name = "localstack-bug"
-s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-83da3a40"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-0f4a5bb5"
 s3_prefix = "localstack-bug"
 region = "us-east-1"
 capabilities = "CAPABILITY_IAM"
