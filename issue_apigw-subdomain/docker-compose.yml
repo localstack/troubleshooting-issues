@@ -1,0 +1,34 @@
+version: "3.8"
+
+services:
+  localstack:
+    container_name: "localstack-main"
+    image: localstack/localstack-pro  # required for Pro
+    ports:
+      - "127.0.0.1:4566:4566"            # LocalStack Gateway
+      - "127.0.0.1:4510-4559:4510-4559"  # external services port range
+      - "127.0.0.1:53:53"                # DNS config (required for Pro)
+      - "127.0.0.1:53:53/udp"            # DNS config (required for Pro)
+      - "127.0.0.1:443:443"              # LocalStack HTTPS Gateway (required for Pro)
+    environment:
+      - DEBUG=1
+      - LOCALSTACK_API_KEY=${LOCALSTACK_API_KEY-}  # required for Pro
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - MAIN_DOCKER_NETWORK=ls
+#      New network setup: https://www.notion.so/localstack/2023-03-21-networking-sync-9f34c512d964469689eff9e815281238
+      - LOCALSTACK_HOST=localhost.localstack.cloud:4566
+      - GATEWAY_LISTEN=0.0.0.0:4566
+      - SQS_ENDPOINT_STRATEGY=path
+#     DEPRECATED
+#      - HOSTNAME_EXTERNAL=localstack
+    volumes:
+      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      ls:
+        aliases:
+          # so that the hostname is consistent between docker and the host
+          - localhost.localstack.cloud
+networks:
+  ls:
+    name: ls

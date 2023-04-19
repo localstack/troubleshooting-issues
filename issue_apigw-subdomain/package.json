@@ -1,0 +1,11 @@
+{
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "serverless": "^2.0.0",
+    "serverless-deployment-bucket": "^1.1.0",
+    "serverless-localstack": "^1.0.6"
+  },
+  "scripts": {
+    "deploy": "sls deploy --stage local"
+  }
+}

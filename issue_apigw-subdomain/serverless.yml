@@ -1,0 +1,23 @@
+service: sls-apigw-subdomain
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  stage: local
+  region: us-east-1
+
+custom:
+  localstack:
+    stages:
+      - local
+
+functions:
+  hello:
+    handler: handler.hello
+    events:
+      - httpApi:
+          path: /hello
+          method: get
+
+plugins:
+  - serverless-localstack
