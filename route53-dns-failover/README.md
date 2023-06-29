@@ -29,7 +29,7 @@ $ dig @127.0.0.1 example.com CNAME
 target1.execute-api.localhost.localstack.cloud.
 ```
 
-Stop the Web server that was started above, and wait for around ~30 seconds (for the health check to get updated). If resolve the host name `example.com` again, it should now result in the secondary target, `target2.execute-api.localhost.localstack.cloud`:
+Stop the Web server that was started above, and wait for around ~30 seconds (for the health check to get updated). When resolving the host name `example.com` again, it should now result in the secondary target, `target2.execute-api.localhost.localstack.cloud`:
 ```
 $ dig @127.0.0.1 example.com CNAME
 ...
