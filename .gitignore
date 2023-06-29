@@ -1,4 +1,9 @@
 *.egg-info/
 .idea/
 
+node_modules/
+
 __pycache__/
+
+.terraform*
+terraform.tfstate*
